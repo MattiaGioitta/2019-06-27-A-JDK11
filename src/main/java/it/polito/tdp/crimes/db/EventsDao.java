@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
+import it.polito.tdp.crimes.model.Adiacenza;
 import it.polito.tdp.crimes.model.Event;
 
 
@@ -52,6 +55,109 @@ public class EventsDao {
 			e.printStackTrace();
 			return null ;
 		}
+	}
+
+	public List<String> getCategorie() {
+		final String sql = "SELECT DISTINCT(offense_category_id) AS of " + 
+				"FROM events";
+		List<String> categorie = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while(res.next()) {
+				categorie.add(res.getString("of"));
+			}
+			conn.close();
+			return categorie;
+			
+		}catch(SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+		
+	}
+
+	public List<Integer> getAnni() {
+		final String sql = "SELECT DISTINCT(YEAR(reported_date)) AS d " + 
+				"FROM events " + 
+				"ORDER BY YEAR(reported_date) ASC";
+		List<Integer> anni = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			ResultSet res = st.executeQuery();
+			while(res.next()) {
+				anni.add(res.getInt("d"));
+			}
+			conn.close();
+			return anni;
+			
+		}catch(SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+		
+	}
+
+	public List<String> getVertici(String categoria, Integer anno) {
+		final String sql = "SELECT DISTINCT(offense_type_id) AS of " + 
+				"FROM events " + 
+				"WHERE YEAR(reported_date)=? " + 
+				"AND offense_category_id=?";
+		List<String> categorie = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, anno);
+			st.setString(2, categoria);
+			ResultSet res = st.executeQuery();
+			while(res.next()) {
+				categorie.add(res.getString("of"));
+			}
+			conn.close();
+			return categorie;
+			
+		}catch(SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+		
+	}
+
+	public List<Adiacenza> getAdiacenze(String categoria, Integer anno) {
+		final String sql="SELECT e1.offense_type_id AS of1,e2.offense_type_id AS of2, COUNT(DISTINCT(e1.district_id)) AS peso " + 
+				"FROM events AS e1, events AS e2 " + 
+				"WHERE e1.offense_type_id<>e2.offense_type_id " + 
+				"AND e1.district_id=e2.district_id " + 
+				"AND YEAR(e1.reported_date)=? " + 
+				"AND YEAR(e2.reported_date)=? " + 
+				"AND e1.offense_category_id=? " + 
+				"AND e2.offense_category_id=? " + 
+				"GROUP BY e1.offense_type_id,e2.offense_type_id";
+		List<Adiacenza> adiacenze = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, anno);
+			st.setInt(2, anno);
+			st.setString(3, categoria);
+			st.setString(4, categoria);
+			ResultSet res = st.executeQuery();
+			while(res.next()) {
+				Adiacenza a = new Adiacenza(res.getString("of1"),res.getString("of2"),res.getInt("peso"));
+				if(a.getPeso()>0) {
+					adiacenze.add(a);
+				}
+			}
+			conn.close();
+			return adiacenze;
+		}catch(SQLException e) {
+			e.printStackTrace();
+			return null ;
+		}
+		
+		
 	}
 
 }
